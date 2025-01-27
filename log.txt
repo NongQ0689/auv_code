@@ -1,0 +1,20 @@
+/usr/bin/ld: /tmp/ccPoUKVO.o: in function `WebcamVideoStream::WebcamVideoStream(int, int, int)':
+human_tracking_cpp.cpp:(.text._ZN17WebcamVideoStreamC2Eiii[_ZN17WebcamVideoStreamC5Eiii]+0x20): undefined reference to `cv::VideoCapture::VideoCapture()'
+/usr/bin/ld: human_tracking_cpp.cpp:(.text._ZN17WebcamVideoStreamC2Eiii[_ZN17WebcamVideoStreamC5Eiii]+0x54): undefined reference to `cv::VideoCapture::open(int, int)'
+/usr/bin/ld: human_tracking_cpp.cpp:(.text._ZN17WebcamVideoStreamC2Eiii[_ZN17WebcamVideoStreamC5Eiii]+0x6c): undefined reference to `cv::VideoCapture::set(int, double)'
+/usr/bin/ld: human_tracking_cpp.cpp:(.text._ZN17WebcamVideoStreamC2Eiii[_ZN17WebcamVideoStreamC5Eiii]+0x84): undefined reference to `cv::VideoCapture::set(int, double)'
+/usr/bin/ld: human_tracking_cpp.cpp:(.text._ZN17WebcamVideoStreamC2Eiii[_ZN17WebcamVideoStreamC5Eiii]+0xa4): undefined reference to `cv::VideoCapture::operator>>(cv::Mat&)'
+/usr/bin/ld: human_tracking_cpp.cpp:(.text._ZN17WebcamVideoStreamC2Eiii[_ZN17WebcamVideoStreamC5Eiii]+0xc0): undefined reference to `cv::VideoCapture::~VideoCapture()'
+/usr/bin/ld: /tmp/ccPoUKVO.o: in function `WebcamVideoStream::update()':
+human_tracking_cpp.cpp:(.text._ZN17WebcamVideoStream6updateEv[_ZN17WebcamVideoStream6updateEv]+0x30): undefined reference to `cv::VideoCapture::operator>>(cv::Mat&)'
+/usr/bin/ld: /tmp/ccPoUKVO.o: in function `HumanTracking::HumanTracking(int, int, bool, bool)':
+human_tracking_cpp.cpp:(.text._ZN13HumanTrackingC2Eiibb[_ZN13HumanTrackingC5Eiibb]+0x8c): undefined reference to `cv::VideoWriter::VideoWriter()'
+/usr/bin/ld: human_tracking_cpp.cpp:(.text._ZN13HumanTrackingC2Eiibb[_ZN13HumanTrackingC5Eiibb]+0x624): undefined reference to `cv::VideoWriter::fourcc(char, char, char, char)'
+/usr/bin/ld: human_tracking_cpp.cpp:(.text._ZN13HumanTrackingC2Eiibb[_ZN13HumanTrackingC5Eiibb]+0x65c): undefined reference to `cv::VideoWriter::open(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int, double, cv::Size_<int>, bool)'
+/usr/bin/ld: human_tracking_cpp.cpp:(.text._ZN13HumanTrackingC2Eiibb[_ZN13HumanTrackingC5Eiibb]+0x874): undefined reference to `cv::VideoWriter::~VideoWriter()'
+/usr/bin/ld: /tmp/ccPoUKVO.o: in function `HumanTracking::track_humans()':
+human_tracking_cpp.cpp:(.text._ZN13HumanTracking12track_humansEv[_ZN13HumanTracking12track_humansEv]+0xc14): undefined reference to `cv::VideoWriter::write(cv::_InputArray const&)'
+/usr/bin/ld: /tmp/ccPoUKVO.o: in function `HumanTracking::~HumanTracking()':
+human_tracking_cpp.cpp:(.text._ZN13HumanTrackingD2Ev[_ZN13HumanTrackingD5Ev]+0x24): undefined reference to `cv::VideoWriter::release()'
+/usr/bin/ld: human_tracking_cpp.cpp:(.text._ZN13HumanTrackingD2Ev[_ZN13HumanTrackingD5Ev]+0x30): undefined reference to `cv::VideoWriter::~VideoWriter()'
+collect2: error: ld returned 1 exit status
