@@ -20,7 +20,9 @@ class WebcamVideoStream:
         return self
 
     def update(self):
-        while not self.stopped:
+        while True:
+            if self.stopped:
+                return
             (self.grabbed, self.frame) = self.stream.read()
 
     def read(self):
@@ -28,7 +30,6 @@ class WebcamVideoStream:
 
     def stop(self):
         self.stopped = True
-        self.stream.release()
 
 
 class HumanTracking:
@@ -49,6 +50,13 @@ class HumanTracking:
         self.CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
 
         self.vs = WebcamVideoStream(src=0, width=self.width, height=self.height).start()
+
+        # Initialize video writer if saving video
+        if self.save_video:
+            current_time = str(int(time.time()))
+            filename = f'output_{current_time}.avi'
+            fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Codec for video
+            self.video_writer = cv2.VideoWriter(filename, fourcc, 10.0, (self.width, self.height))
 
     def send_to_esp32(self, error_x, error_y):
         if self.serial_port:
@@ -120,6 +128,14 @@ class HumanTracking:
                 cv2.destroyAllWindows()
                 exit()
 
+        # If we are saving video, write the frame to the video file
+        if self.save_video:
+            self.video_writer.write(frame)
+
+    def __del__(self):
+        if self.save_video:
+            self.video_writer.release()  # Release the video writer
+
 
 def main():
     parser = argparse.ArgumentParser(description="Human Tracking Program")
@@ -128,7 +144,15 @@ def main():
     parser.add_argument('--port', type=str, default=None, help="Serial port for ESP32 communication (e.g., /dev/ttyUSB0 or COM3)")
     args = parser.parse_args()
 
-    tracker = HumanTracking(320, 240, serial_port=args.port, show_frame=not args.hide, save_video=args.vdo)
+    show_frame = not args.hide  # If --hide, will not display frame
+    save_video = args.vdo  # If --vdo, will save and show video
+    serial_port = args.port
+
+    print(f"\n\nshow_frame:{show_frame} | save_video:{save_video} | serial_port:{serial_port}\n\n")
+
+    width, height = 320, 240  # Set width and height
+    tracker = HumanTracking(width, height, serial_port=serial_port,show_frame=show_frame, save_video=save_video)
+
     while True:
         tracker.track_humans()
 
