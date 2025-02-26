@@ -46,8 +46,8 @@ class TrackingSystem:
 
         # โหลดโมเดลสำหรับ Human Tracking
         self.net = cv2.dnn.readNetFromCaffe(
-            '/home/q/auv_code/deploy.prototxt', 
-            '/home/q/auv_code/mobilenet_iter_73000.caffemodel'
+            'deploy.prototxt', 
+            'mobilenet_iter_73000.caffemodel'
         )
 
         self.CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
@@ -69,7 +69,19 @@ class TrackingSystem:
         self.prev_frame_time = 0
         self.new_frame_time = 0
 
+        self.last_error_x = 0
+        self.last_error_y = 0
+        self.no_target_count = 0
+        self.max_no_target_count = 5
+
+        self.EN = -1  #สำหรับเช็คการส่งข้อมูล ถ้า esp ได้ค่าที่ไม่เปลี่ยนแปลงแสดงว่่าpi error
+
     def send_to_esp32(self, data):
+
+        self.EN *= -1
+        data += f',{self.EN}'
+        print(f"{self.EN}\t",end='')
+
         """ ส่งข้อมูลไปยัง ESP32 """
         if self.serial_port:
             try:
@@ -136,10 +148,17 @@ class TrackingSystem:
         # ตรวจจับมนุษย์ก่อน
         person_detected, pos_x, pos_y, bbox = self.detect_human(frame)
 
-#ตรวจ tag ก่อน  งานส่วนใหญ่คือแทกคน  ถ้าจะให้ตรวจtag ก่อนแล้วค่อยตรวจคนมันน่าจะช้ากว่าเพราะตอนที่จะหาคนต้องรู้ก่อนว่าไม่มีtag   ต่างกันถ้าตรวจคนก่อน  ไม่จำเป็นต้องหาว่ามีtagอยู่มั้ย
+        # ส่วนโค้ดที่ปรับปรุงแล้ว
         if person_detected:
             error_x = pos_x - frame_center_x
             error_y = pos_y - frame_center_y
+            
+            # บันทึกค่า error ล่าสุดเมื่อตรวจพบคน
+            self.last_error_x = error_x
+            self.last_error_y = error_y
+            
+            # รีเซ็ตตัวนับเมื่อพบคน
+            self.no_target_count = 0
 
             # วาดกรอบรอบมนุษย์
             startX, startY, endX, endY = bbox
@@ -152,18 +171,33 @@ class TrackingSystem:
             cv2.line(frame, (pos_x, pos_y), (pos_x, frame_center_y), (255, 0, 0), 1)  # Y-axis (blue)
 
             self.send_to_esp32(f"{error_x},{error_y}")
-            print(f"Human Detected | Error X: {error_x}, Error Y: {error_y}")
+            print(f"Human Detected | Error X: {error_x}, Error Y: {error_y} | send_to_esp32: {error_x},{error_y}")
 
         else:
             # ถ้าไม่เจอมนุษย์ ตรวจจับ AprilTag
-            tag_detected, tag_id = self.detect_apriltag(frame) if self.detect_tag else (False , None)
+            tag_detected, tag_id = self.detect_apriltag(frame) if self.detect_tag else (False, None)
 
             if tag_detected:
-                print(f"AprilTag Detected | ID: {tag_id}")
+                # รีเซ็ตตัวนับเมื่อพบ AprilTag
+                self.no_target_count = 0
                 self.send_to_esp32(f"999,{tag_id}")
+                print(f"AprilTag Detected | ID: {tag_id} | send_to_esp32: 999,{tag_id}")
             else:
-                self.send_to_esp32("0,0")
-                print("No Target Detected")
+                # เพิ่มตัวนับเมื่อไม่พบทั้งคนและ AprilTag
+                if self.no_target_count < self.max_no_target_count:
+                    self.no_target_count += 1
+
+                if self.no_target_count < self.max_no_target_count:
+                    # ยังไม่ถึง 5 ครั้ง ให้ส่งค่า error ล่าสุด
+                    self.send_to_esp32(f"{self.last_error_x},{self.last_error_y}")
+                    print(f"No Target Detected ({self.no_target_count}/{self.max_no_target_count}) | Sending last errors: {self.last_error_x},{self.last_error_y}")
+                else:
+                    # ครบ 5 ครั้งแล้ว ส่ง 777,777
+                    self.last_error_x = 0
+                    self.last_error_y = 0
+                    self.send_to_esp32("777,777")
+                    print(f"No Target Detected ({self.no_target_count}/{self.max_no_target_count}) | send_to_esp32: 777,777")
+
 
         if self.show_frame:
             cv2.imshow('Frame', frame)
@@ -178,7 +212,7 @@ class TrackingSystem:
             self.video_writer.write(frame)
 
         # แสดง FPS ใน terminal
-        print(f"FPS: {fps:.2f}")
+        print(f"\tFPS: {fps:.2f}")
 
     def __del__(self):
         if hasattr(self, 'vs'):
